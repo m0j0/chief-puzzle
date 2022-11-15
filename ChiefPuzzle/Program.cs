@@ -1,7 +1,7 @@
 using Microsoft.Data.Sqlite;
 using System.Xml;
 
-await FillDb();
+//await FillDb();
 
 
 
@@ -34,7 +34,8 @@ async Task FillDb()
     cmd.ExecuteNonQuery();
 
 
-    for (int i = 0; i < 100_000 && await reader.ReadAsync(); i++)
+    //for (int i = 0; i < 100_000 && await reader.ReadAsync(); i++)
+    while (await reader.ReadAsync())
     {
         if (reader.NodeType != XmlNodeType.Element || reader.Name != "page")
         {
