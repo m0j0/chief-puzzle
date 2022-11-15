@@ -1,14 +1,34 @@
 using Microsoft.Data.Sqlite;
 using System.Xml;
+using Dapper;
+using MoreLinq;
 
-//await FillDb();
+const string connectionString = @"Data Source=C:\source\_outside\chief-puzzle\dict.db";
 
+Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+var word = "бисньте";
+var permutations = word.Permutations().Select(list => new string(list.ToArray())).ToArray();
 
+await using var dbConnection = new SqliteConnection(connectionString);
+await dbConnection.OpenAsync();
 
-// https://en.wiktionary.org/wiki/Help:FAQ#Downloading_Wiktionary
+const string query = @"select word, meaning, full 
+from dict
+where word in @permutations
+order by word ASC;";
+
+var results = (await dbConnection.QueryAsync<DictRecord>(query, new {permutations})).ToArray();
+
+foreach (var result in results)
+{
+    Console.WriteLine($"Слово: {result.Word}");
+    Console.WriteLine($"Значение: {result.Meaning}");
+}
+
 async Task FillDb()
 {
+    // https://en.wiktionary.org/wiki/Help:FAQ#Downloading_Wiktionary
     await using var stream = File.OpenRead(@"C:\Users\maslov.n\Desktop\ruwiktionary-20221101-pages-articles-multistream.xml");
 
     var settings = new XmlReaderSettings
@@ -18,7 +38,7 @@ async Task FillDb()
 
     using var reader = XmlReader.Create(stream, settings);
 
-    await using var dbConnection = new SqliteConnection(@"Data Source=C:\source\_outside\chief-puzzle\dict.db");
+    await using var dbConnection = new SqliteConnection(connectionString);
     await dbConnection.OpenAsync();
 
     await using var cmd = new SqliteCommand();
@@ -94,3 +114,5 @@ async Task FillDb()
     cmd.CommandText = "CREATE INDEX word_index ON dict (word);";
     cmd.ExecuteNonQuery();
 }
+
+public record DictRecord(string Word, string Meaning, string Full);
