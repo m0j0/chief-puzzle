@@ -54,14 +54,32 @@ async Task FillDb()
             continue;
         }
 
-        //Console.WriteLine("Title: {0}", title);
-        //Console.WriteLine("Text: {0}", text);
-        //Console.WriteLine();
+        var meaning = GetMeaning(text);
+
+        static string GetMeaning(string t)
+        {
+            const string значение = "==== Значение ====";
+            int значениеLength = значение.Length + 1;
+
+            var start = t.IndexOf(значение, StringComparison.OrdinalIgnoreCase);
+            if (start == -1)
+            {
+                return t;
+            }
+
+            var end = t.IndexOf("==== ", start + значениеLength, StringComparison.OrdinalIgnoreCase);
+            if (end == -1)
+            {
+                return t;
+            }
+
+            return t.Substring(start + значениеLength, end - start - значениеLength);
+        }
 
         cmd.Parameters.Clear();
         cmd.CommandText = "INSERT INTO dict(word, meaning, full) VALUES(@title, @meaning, @full)"; ;
         cmd.Parameters.AddWithValue("@title", title);
-        cmd.Parameters.AddWithValue("@meaning", text);
+        cmd.Parameters.AddWithValue("@meaning", meaning);
         cmd.Parameters.AddWithValue("@full", text);
         cmd.ExecuteNonQuery();
     }
