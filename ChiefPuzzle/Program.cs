@@ -53,7 +53,7 @@ async Task FillDb()
         {
             continue;
         }
-
+        
         var meaning = GetMeaning(text);
 
         static string GetMeaning(string t)
@@ -73,7 +73,7 @@ async Task FillDb()
                 }
             }
             
-            var end = t.IndexOf("==== ", start + значениеLength, StringComparison.OrdinalIgnoreCase);
+            var end = t.IndexOf("===", start + значениеLength, StringComparison.OrdinalIgnoreCase);
             if (end == -1)
             {
                 return t;
