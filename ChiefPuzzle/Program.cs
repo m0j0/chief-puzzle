@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using System.Xml;
 
 await FillDb();
@@ -17,31 +18,56 @@ async Task FillDb()
 
     using var reader = XmlReader.Create(stream, settings);
 
-    int i = 0;
-    while (await reader.ReadAsync())
+    await using var dbConnection = new SqliteConnection(@"Data Source=C:\source\_outside\chief-puzzle\dict.db");
+    await dbConnection.OpenAsync();
+
+    await using var cmd = new SqliteCommand();
+    cmd.Connection = dbConnection;
+
+    cmd.CommandText = "DROP TABLE IF EXISTS dict";
+    cmd.ExecuteNonQuery();
+
+    //cmd.CommandText = "DROP INDEX IF EXISTS word_index";
+    //cmd.ExecuteNonQuery();
+
+    cmd.CommandText = "CREATE TABLE dict(word TEXT, meaning TEXT, full TEXT)";
+    cmd.ExecuteNonQuery();
+
+
+    for (int i = 0; i < 100_000 && await reader.ReadAsync(); i++)
     {
-        if (reader.NodeType == XmlNodeType.Element && reader.Name == "page")
+        if (reader.NodeType != XmlNodeType.Element || reader.Name != "page")
         {
-            reader.ReadToDescendant("title");
-            await reader.ReadAsync();
-            var title = await reader.GetValueAsync();
-
-            reader.ReadToFollowing("text");
-            await reader.ReadAsync();
-            var text = await reader.GetValueAsync();
-
-            Console.WriteLine("Title: {0}", title);
-            Console.WriteLine("Text: {0}", text);
-            Console.WriteLine();
+            continue;
         }
-        
 
-        i++;
-        if (i > 100_000)
+        reader.ReadToDescendant("title");
+        await reader.ReadAsync();
+        var title = await reader.GetValueAsync();
+
+        reader.ReadToFollowing("text");
+        await reader.ReadAsync();
+        var text = await reader.GetValueAsync();
+
+        if (text.StartsWith("#REDIRECT"))
         {
-            break;
+            continue;
         }
+
+        //Console.WriteLine("Title: {0}", title);
+        //Console.WriteLine("Text: {0}", text);
+        //Console.WriteLine();
+
+        cmd.Parameters.Clear();
+        cmd.CommandText = "INSERT INTO dict(word, meaning, full) VALUES(@title, @meaning, @full)"; ;
+        cmd.Parameters.AddWithValue("@title", title);
+        cmd.Parameters.AddWithValue("@meaning", text);
+        cmd.Parameters.AddWithValue("@full", text);
+        cmd.ExecuteNonQuery();
     }
+
+    cmd.CommandText = "CREATE INDEX word_index ON dict (word);";
+    cmd.ExecuteNonQuery();
 }
 
 
