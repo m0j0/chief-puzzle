@@ -58,22 +58,28 @@ async Task FillDb()
 
         static string GetMeaning(string t)
         {
-            const string значение = "==== Значение ====";
+            string значение = "==== Значение ====";
             int значениеLength = значение.Length + 1;
 
             var start = t.IndexOf(значение, StringComparison.OrdinalIgnoreCase);
             if (start == -1)
             {
-                return t;
-            }
+                значение = "==== Семантические свойства ====";
+                start = t.IndexOf(значение, StringComparison.OrdinalIgnoreCase);
 
+                if (start == -1)
+                {
+                    return t;
+                }
+            }
+            
             var end = t.IndexOf("==== ", start + значениеLength, StringComparison.OrdinalIgnoreCase);
             if (end == -1)
             {
                 return t;
             }
 
-            return t.Substring(start + значениеLength, end - start - значениеLength);
+            return t.Substring(start + значениеLength, end - start - значениеLength).Trim();
         }
 
         cmd.Parameters.Clear();
@@ -87,5 +93,3 @@ async Task FillDb()
     cmd.CommandText = "CREATE INDEX word_index ON dict (word);";
     cmd.ExecuteNonQuery();
 }
-
-
